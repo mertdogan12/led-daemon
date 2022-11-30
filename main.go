@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/mertdogan12/led-daemon/config"
+	"github.com/mertdogan12/led-daemon/internal/uds"
 )
 
 func main() {
@@ -27,14 +27,12 @@ func main() {
 	if err := run(c); err != nil {
 		os.Exit(1)
 	}
-
-	log.Printf("Hallo world")
-
-	time.Sleep(8 * time.Second)
 }
 
 func run(c *config.Config) error {
 	c.Init(os.Args)
+
+	uds.Run()
 
 	return nil
 }
