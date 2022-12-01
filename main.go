@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/mertdogan12/led-daemon/config"
+	"github.com/mertdogan12/led-daemon/internal/led"
 	"github.com/mertdogan12/led-daemon/internal/uds"
 )
 
@@ -32,7 +33,8 @@ func main() {
 func run(c *config.Config) error {
 	c.Init(os.Args)
 
-	uds.Run()
+	go uds.Run()
+	led.Run()
 
 	return nil
 }
