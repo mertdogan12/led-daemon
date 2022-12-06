@@ -1,14 +1,16 @@
 package main
 
 import (
+	"encoding/binary"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/mertdogan12/led-daemon/config"
-	"github.com/mertdogan12/led-daemon/internal/led"
-	"github.com/mertdogan12/led-daemon/internal/uds"
+	"github.com/mesilliac/pulse-simple"
 )
 
 func main() {
@@ -33,8 +35,33 @@ func main() {
 func run(c *config.Config) error {
 	c.Init(os.Args)
 
-	go uds.Run()
-	led.Run()
+	// go uds.Run()
+	// led.Run()
 
-	return nil
+	ss := pulse.SampleSpec{
+		Format:   pulse.SAMPLE_S16NE,
+		Rate:     96000,
+		Channels: 2,
+	}
+	stream, err := pulse.Capture("led", "music", &ss)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer stream.Free()
+	defer stream.Drain()
+
+	out := make([]byte, 2)
+	for {
+		_, err = stream.Read(out)
+		if err != nil {
+			log.Fatal("Error while reading: ", err)
+		}
+
+		data := int16(binary.LittleEndian.Uint16(out))
+		fmt.Println(data, out)
+
+		time.Sleep(100 * time.Millisecond)
+	}
 }

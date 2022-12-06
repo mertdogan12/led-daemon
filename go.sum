@@ -1,2 +1,10 @@
+github.com/godbus/dbus v4.1.0+incompatible h1:WqqLRTsQic3apZUK9qC5sGNfXthmPXzUZ7nQPrNITa4=
+github.com/godbus/dbus v4.1.0+incompatible/go.mod h1:/YcGZj5zSblfDWMMoOzV4fas9FZnQYTkDnsGvmh2Grw=
+github.com/jfreymuth/pulse v0.1.0 h1:KN38/9hoF9PJvP5DpEVhMRKNuwnJUonc8c9ARorRXUA=
+github.com/jfreymuth/pulse v0.1.0/go.mod h1:cpYspI6YljhkUf1WLXLLDmeaaPFc3CnGLjDZf9dZ4no=
+github.com/mesilliac/pulse-simple v0.0.0-20170506101341-75ac54e19fdf h1:Zkc2mThKEz8uIFMN5S9Vde4F075QqonswrYWngsjq0g=
+github.com/mesilliac/pulse-simple v0.0.0-20170506101341-75ac54e19fdf/go.mod h1:w/UDU7AYzhUNZpb9TmWkrEFVu1+yA8jn++5871x9hWc=
 github.com/namsral/flag v1.7.4-pre h1:b2ScHhoCUkbsq0d2C15Mv+VU8bl8hAXV8arnWiOHNZs=
 github.com/namsral/flag v1.7.4-pre/go.mod h1:OXldTctbM6SWH1K899kPZcf65KxJiD7MsceFUpB5yDo=
+github.com/sqp/pulseaudio v0.0.0-20180916175200-29ac6bfa231c h1:GtYMHdPBniUh0I+RZ563TsL6ZlvCbaO7jbEOsDDB7EI=
+github.com/sqp/pulseaudio v0.0.0-20180916175200-29ac6bfa231c/go.mod h1:RH1uOz6XaP849IvlvocEoBsW/SMmxRTzEd7olkyO2zI=
