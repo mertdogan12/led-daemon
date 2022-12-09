@@ -14,13 +14,19 @@ var DeviceCount int = 1
 var subnet string = "192.168.100."
 var port string = "1337"
 
+var _red uint16 = 0
+var _green uint16 = 0
+var _blue uint16 = 0
+
 func Run() {
 	for {
 		switch uds.Mode {
 		case "off":
 			off()
+
 		case "color":
 			color()
+
 		default:
 			log.Printf("Mode %s does not exist. Mode set to default (off).", uds.Mode)
 			uds.Mode = "off"
@@ -31,18 +37,26 @@ func Run() {
 }
 
 func off() {
-	setColor(0, 0, 0)
+	changeColor(0, 0, 0)
 
 	time.Sleep(time.Second)
 }
 
 func color() {
-	setColor(0, 0, 255)
+	changeColor(0, 0, 255)
 
 	time.Sleep(time.Second)
 }
 
-func setColor(red uint16, green uint16, blue uint16) {
+func setColor() {
+	changeColor(_red, _green, _blue)
+}
+
+func changeColor(red uint16, green uint16, blue uint16) {
+	_red = red
+	_green = green
+	_blue = blue
+
 	multi := uint16(1024 / 255)
 
 	data := make([]byte, 0)
