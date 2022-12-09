@@ -39,7 +39,7 @@ func run(c *config.Config) error {
 	// led.Run()
 
 	ss := pulse.SampleSpec{
-		Format:   pulse.SAMPLE_S16NE,
+		Format:   pulse.SAMPLE_S16BE,
 		Rate:     96000,
 		Channels: 2,
 	}
@@ -52,15 +52,18 @@ func run(c *config.Config) error {
 	defer stream.Free()
 	defer stream.Drain()
 
-	out := make([]byte, 2)
+	fmt.Println("left,right")
+
+	out := make([]byte, 4)
 	for {
 		_, err = stream.Read(out)
 		if err != nil {
 			log.Fatal("Error while reading: ", err)
 		}
 
-		data := int16(binary.LittleEndian.Uint16(out))
-		fmt.Println(data, out)
+		left := int16(binary.BigEndian.Uint16(out[:2]))
+		right := int16(binary.BigEndian.Uint16(out[2:4]))
+		fmt.Printf("%d,%d\n", left, right)
 
 		time.Sleep(100 * time.Millisecond)
 	}
