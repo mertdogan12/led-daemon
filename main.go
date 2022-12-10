@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/mertdogan12/led-daemon/config"
 	"github.com/mesilliac/pulse-simple"
@@ -54,17 +53,18 @@ func run(c *config.Config) error {
 
 	fmt.Println("left,right")
 
-	out := make([]byte, 4)
+	out := make([]byte, 41943040)
 	for {
 		_, err = stream.Read(out)
 		if err != nil {
 			log.Fatal("Error while reading: ", err)
 		}
 
+		os.WriteFile("out.raw", out, 0644)
+		return nil
+
 		left := int16(binary.BigEndian.Uint16(out[:2]))
 		right := int16(binary.BigEndian.Uint16(out[2:4]))
 		fmt.Printf("%d,%d\n", left, right)
-
-		time.Sleep(100 * time.Millisecond)
 	}
 }
