@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/mazznoer/colorgrad"
 	"github.com/mertdogan12/led-daemon/internal/uds"
 )
 
@@ -14,9 +15,11 @@ var DeviceCount int = 1
 var subnet string = "192.168.100."
 var port string = "1337"
 
-var _red uint16 = 0
+var _red uint16 = 255
 var _green uint16 = 0
 var _blue uint16 = 0
+
+var grad = colorgrad.Rainbow()
 
 func Run() {
 	for {
@@ -25,14 +28,17 @@ func Run() {
 			off()
 
 		case "color":
-			color()
+			colorEffect()
+
+		case "fade":
+			fade()
 
 		default:
 			log.Printf("Mode %s does not exist. Mode set to default (off).", uds.Mode)
 			uds.Mode = "off"
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
@@ -42,20 +48,31 @@ func off() {
 	time.Sleep(time.Second)
 }
 
-func color() {
-	changeColor(0, 0, 255)
+func colorEffect() {
+	changeColor(uds.Color.Red, uds.Color.Green, uds.Color.Blue)
 
 	time.Sleep(time.Second)
 }
 
-func setColor() {
-	changeColor(_red, _green, _blue)
+var speed float64 = 0.01
+var pos float64 = 0
+
+func fade() {
+	red := grad.At(pos).R * 100
+	green := grad.At(pos).G * 100
+	blue := grad.At(pos).B * 100
+
+	changeColor(
+		uint16(red),
+		uint16(green),
+		uint16(blue),
+	)
+
+	pos += speed
 }
 
 func changeColor(red uint16, green uint16, blue uint16) {
-	_red = red
-	_green = green
-	_blue = blue
+	fmt.Println(red, green, blue)
 
 	multi := uint16(1024 / 255)
 
@@ -70,6 +87,8 @@ func changeColor(red uint16, green uint16, blue uint16) {
 
 	binary.LittleEndian.PutUint16(tmp, 1024-blue*multi) // Blue
 	data = append(data, tmp...)
+
+	println(data[0], data[1])
 
 	sendData(data)
 }

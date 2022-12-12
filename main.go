@@ -21,6 +21,7 @@ func main() {
 		select {
 		case <-signalChan:
 			log.Printf("Got Signal to exit")
+			os.Remove(uds.SockAddr)
 			os.Exit(1)
 		}
 	}()
