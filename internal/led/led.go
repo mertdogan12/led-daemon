@@ -19,7 +19,8 @@ var _red uint16 = 255
 var _green uint16 = 0
 var _blue uint16 = 0
 
-var grad = colorgrad.Rainbow()
+var fadeGrad = colorgrad.Sinebow()
+var blinkGrad = colorgrad.Sinebow().Sharp(11, 0)
 
 func Run() {
 	for {
@@ -33,12 +34,15 @@ func Run() {
 		case "fade":
 			fade()
 
+		case "blink":
+			blink()
+
 		default:
 			log.Printf("Mode %s does not exist. Mode set to default (off).", uds.Mode)
 			uds.Mode = "off"
 		}
 
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -54,13 +58,14 @@ func colorEffect() {
 	time.Sleep(time.Second)
 }
 
-var speed float64 = 0.01
+var fadeSpeed float64 = 0.001
+var blinkSpeed float64 = 0.01
 var pos float64 = 0
 
 func fade() {
-	red := grad.At(pos).R * 100
-	green := grad.At(pos).G * 100
-	blue := grad.At(pos).B * 100
+	red := fadeGrad.At(pos).R * 100
+	green := fadeGrad.At(pos).G * 100
+	blue := fadeGrad.At(pos).B * 100
 
 	changeColor(
 		uint16(red),
@@ -68,27 +73,43 @@ func fade() {
 		uint16(blue),
 	)
 
-	pos += speed
+	pos += fadeSpeed
+
+	if pos >= 1 {
+		pos = 0
+	}
+}
+
+func blink() {
+	red := blinkGrad.At(pos).R * 100
+	green := blinkGrad.At(pos).G * 100
+	blue := blinkGrad.At(pos).B * 100
+
+	changeColor(
+		uint16(red),
+		uint16(green),
+		uint16(blue),
+	)
+
+	pos += blinkSpeed
+
+	if pos >= 1 {
+		pos = 0
+	}
 }
 
 func changeColor(red uint16, green uint16, blue uint16) {
-	fmt.Println(red, green, blue)
-
-	multi := uint16(1024 / 255)
-
 	data := make([]byte, 0)
 	tmp := make([]byte, 2)
 
-	binary.LittleEndian.PutUint16(tmp, 1024-red*multi) // Red
+	binary.LittleEndian.PutUint16(tmp, 255-red) // Red
 	data = append(data, tmp...)
 
-	binary.LittleEndian.PutUint16(tmp, 1024-green*multi) // Green
+	binary.LittleEndian.PutUint16(tmp, 255-green) // Green
 	data = append(data, tmp...)
 
-	binary.LittleEndian.PutUint16(tmp, 1024-blue*multi) // Blue
+	binary.LittleEndian.PutUint16(tmp, 255-blue) // Blue
 	data = append(data, tmp...)
-
-	println(data[0], data[1])
 
 	sendData(data)
 }
