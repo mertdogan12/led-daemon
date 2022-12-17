@@ -1,6 +1,7 @@
 package uds
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -18,11 +19,15 @@ type ColorStruct struct {
 const SockAddr = "/tmp/led.sock"
 
 var Mode string = "off"
+
 var Color ColorStruct = ColorStruct{
 	Red:   0,
 	Green: 0,
 	Blue:  0,
 }
+
+var FadeSpeed float64 = 0.01
+var BlinkSpeed float64 = 0.01
 
 func Run() {
 	if err := os.RemoveAll(SockAddr); err != nil {
@@ -45,7 +50,7 @@ func Run() {
 
 		log.Printf("Client connected [%s]", conn.RemoteAddr().Network())
 
-		data := make([]byte, 32)
+		data := make([]byte, 256)
 
 		n, err := conn.Read(data)
 		if err != nil {
@@ -54,46 +59,60 @@ func Run() {
 			continue
 		}
 
-		// Remove spaces and newlines from mode
-		re := regexp.MustCompile(`[^a-z 0-9]`)
+		re := regexp.MustCompile(`[^a-z 0-9.]`)
 		data = re.ReplaceAll(data[:n], make([]byte, 0))
 
-		Mode = string(data)
+		dataString := strings.Split(string(data), " ")
+		Mode = dataString[0]
 
-		println(Mode)
+		switch Mode {
+		case "color":
+			if len(dataString) != 3+1 {
+				answer(conn, "No Color is given")
+				break
+			}
 
-		for i, m := range strings.Split(Mode, " ") {
-			switch i {
-			case 0:
-				Mode = m
+			r, err := strconv.Atoi(dataString[1])
+			g, err := strconv.Atoi(dataString[2])
+			b, err := strconv.Atoi(dataString[3])
+			if err != nil {
+				answer(
+					conn,
+					fmt.Sprintf("Could not parse colors %s %s %s", dataString[1], dataString[2], dataString[3]),
+				)
+				break
+			}
 
-			case 1:
-				r, err := strconv.Atoi(m)
-				if err != nil {
-					answer(conn, "Could not parse color (as integer)"+m)
-				}
+			Color = ColorStruct{
+				Red:   uint16(r),
+				Green: uint16(g),
+				Blue:  uint16(b),
+			}
 
-				Color.Red = uint16(r)
+		case "fade", "blink":
+			if len(dataString) != 1+1 {
+				answer(conn, "No speed is given")
+				break
+			}
 
-			case 2:
-				g, err := strconv.Atoi(m)
-				if err != nil {
-					answer(conn, "Could not parse color (as integer)"+m)
-					break
-				}
+			speed, err := strconv.ParseFloat(dataString[1], 64)
+			if err != nil {
+				answer(
+					conn,
+					fmt.Sprint("Could not parse speed", dataString[1]),
+				)
+				break
+			}
 
-				Color.Green = uint16(g)
+			if speed <= 0 || speed >= 1 {
+				answer(conn, fmt.Sprintf("Speed must be between 0 and 1, %f", speed))
+				break
+			}
 
-			case 3:
-				b, err := strconv.Atoi(m)
-				if err != nil {
-					answer(conn, "Could not parse color (as integer)"+m)
-					break
-				}
-
-				Color.Blue = uint16(b)
-
-				println(Color.Blue)
+			if Mode == "fade" {
+				FadeSpeed = speed
+			} else {
+				BlinkSpeed = speed
 			}
 		}
 

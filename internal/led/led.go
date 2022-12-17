@@ -3,6 +3,7 @@ package led
 import (
 	"encoding/binary"
 	"fmt"
+	"image/color"
 	"log"
 	"net"
 	"time"
@@ -23,6 +24,21 @@ var fadeGrad = colorgrad.Sinebow()
 var blinkGrad = colorgrad.Sinebow().Sharp(11, 0)
 
 func Run() {
+	var err error
+
+	fadeGrad, err = colorgrad.NewGradient().
+		Colors(
+			color.RGBA{255, 0, 0, 255},
+			color.RGBA{0, 255, 0, 255},
+			color.RGBA{0, 0, 255, 255},
+			color.RGBA{255, 0, 0, 255},
+		).
+		Build()
+
+	if err != nil {
+		panic(err)
+	}
+
 	for {
 		switch uds.Mode {
 		case "off":
@@ -58,8 +74,6 @@ func colorEffect() {
 	time.Sleep(time.Second)
 }
 
-var fadeSpeed float64 = 0.001
-var blinkSpeed float64 = 0.01
 var pos float64 = 0
 
 func fade() {
@@ -73,7 +87,7 @@ func fade() {
 		uint16(blue),
 	)
 
-	pos += fadeSpeed
+	pos += uds.FadeSpeed
 
 	if pos >= 1 {
 		pos = 0
@@ -91,7 +105,7 @@ func blink() {
 		uint16(blue),
 	)
 
-	pos += blinkSpeed
+	pos += uds.BlinkSpeed
 
 	if pos >= 1 {
 		pos = 0
