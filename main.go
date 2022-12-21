@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
@@ -9,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/mertdogan12/led-daemon/config"
-	"github.com/mesilliac/pulse-simple"
+	"github.com/mertdogan12/pulse-simple"
 )
 
 func main() {
@@ -38,11 +37,11 @@ func run(c *config.Config) error {
 	// led.Run()
 
 	ss := pulse.SampleSpec{
-		Format:   pulse.SAMPLE_S16BE,
-		Rate:     96000,
+		Format:   pulse.SAMPLE_FLOAT32LE,
+		Rate:     48000,
 		Channels: 2,
 	}
-	stream, err := pulse.Capture("led", "music", &ss)
+	stream, err := pulse.Capture("led", "music", "bluez_output.E0_9D_FA_E3_56_CA.1", &ss)
 
 	if err != nil {
 		log.Fatal(err)
@@ -53,18 +52,13 @@ func run(c *config.Config) error {
 
 	fmt.Println("left,right")
 
-	out := make([]byte, 41943040)
-	for {
-		_, err = stream.Read(out)
-		if err != nil {
-			log.Fatal("Error while reading: ", err)
-		}
-
-		os.WriteFile("out.raw", out, 0644)
-		return nil
-
-		left := int16(binary.BigEndian.Uint16(out[:2]))
-		right := int16(binary.BigEndian.Uint16(out[2:4]))
-		fmt.Printf("%d,%d\n", left, right)
+	out := make([]byte, 41943040/4)
+	_, err = stream.Read(out)
+	if err != nil {
+		log.Fatal("Error while reading: ", err)
 	}
+
+	os.WriteFile("out.raw", out, 0644)
+
+	return nil
 }
