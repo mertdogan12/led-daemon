@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/fatih/color"
 	"github.com/mertdogan12/led-daemon/config"
 	"github.com/mertdogan12/pulse-simple"
 )
@@ -39,7 +42,7 @@ func run(c *config.Config) error {
 	ss := pulse.SampleSpec{
 		Format:   pulse.SAMPLE_FLOAT32LE,
 		Rate:     48000,
-		Channels: 2,
+		Channels: 1,
 	}
 	stream, err := pulse.Capture("led", "music", "bluez_output.E0_9D_FA_E3_56_CA.1", &ss)
 
@@ -50,15 +53,23 @@ func run(c *config.Config) error {
 	defer stream.Free()
 	defer stream.Drain()
 
+	out := make([]byte, 4)
+	col := color.New(color.BgBlue)
 	fmt.Println("left,right")
 
-	out := make([]byte, 41943040/4)
-	_, err = stream.Read(out)
-	if err != nil {
-		log.Fatal("Error while reading: ", err)
+	for {
+		_, err := stream.Read(out)
+		if err != nil {
+			log.Fatal("Error while reading: ", err)
+		}
+
+		leftBits := binary.LittleEndian.Uint32(out)
+		left := math.Float32frombits(leftBits)
+
+		for i := 0; float32(i) < left; i++ {
+			col.Print(left, '\n')
+		}
+
+		//		fmt.Print("\033[H\033[2J")
 	}
-
-	os.WriteFile("out.raw", out, 0644)
-
-	return nil
 }
