@@ -18,6 +18,9 @@ func ReadAudio(lenght int) ([]byte, error) {
 		return out, err
 	}
 
+	defer stream.Free()
+	defer stream.Drain()
+
 	_, err = stream.Read(out)
 	if err != nil {
 		return out, err

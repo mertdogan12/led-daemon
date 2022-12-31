@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/fatih/color"
+	"github.com/mazznoer/colorgrad"
 	"github.com/mertdogan12/led-daemon/config"
 	"github.com/mertdogan12/pulse-simple"
+	truecolor "github.com/wayneashleyberry/truecolor/pkg/color"
 )
 
 func main() {
@@ -44,7 +46,7 @@ func run(c *config.Config) error {
 		Rate:     48000,
 		Channels: 1,
 	}
-	stream, err := pulse.Capture("led", "music", "bluez_output.E0_9D_FA_E3_56_CA.1", &ss)
+	stream, err := pulse.Capture("led", "music", "", &ss)
 
 	if err != nil {
 		log.Fatal(err)
@@ -53,23 +55,97 @@ func run(c *config.Config) error {
 	defer stream.Free()
 	defer stream.Drain()
 
-	out := make([]byte, 4)
-	col := color.New(color.BgBlue)
-	fmt.Println("left,right")
+	tmp := make([]byte, 4)
+	// pcmData := make([]byte, 1024)
+	// _, err = stream.Read(pcmData)
+	// if err != nil {
+	// 	log.Fatal("Error while reading: ", err)
+	// }
+
+	// pcm := convToFloat(pcmData)
+
+	fadeGrad := colorgrad.Rainbow()
+	outFile, err := os.Create("out.raw")
+	if err != nil {
+		panic(err)
+	}
 
 	for {
-		_, err := stream.Read(out)
+		_, err = stream.Read(tmp)
 		if err != nil {
 			log.Fatal("Error while reading: ", err)
 		}
 
-		leftBits := binary.LittleEndian.Uint32(out)
-		left := math.Float32frombits(leftBits)
+		tmpBits := binary.LittleEndian.Uint32(tmp)
+		tmpFloat := math.Float32frombits(tmpBits)
 
-		for i := 0; float32(i) < left; i++ {
-			col.Print(left, '\n')
+		outFile.Write(tmp)
+
+		// pcm := pcm[1:]
+		// pcm = append(pcm, tmpFloat)
+
+		// _, max := calcAvrMax(pcm)
+		min := float32(-0.5)
+		// average := float32(0)
+		max := float32(0.5)
+
+		if tmpFloat < min || tmpFloat > max {
+			continue
 		}
 
-		//		fmt.Print("\033[H\033[2J")
+		difference := tmpFloat - min
+		value := difference
+		out := make([]byte, int(value*100))
+
+		for i := range out {
+			out[i] = ' '
+		}
+
+		rgb := fadeGrad.At(float64(value))
+
+		// fmt.Print("\033[H\033[2J")
+
+		truecolor.
+			White().
+			Background(uint8(rgb.R*100), uint8(rgb.G*100), uint8(rgb.B*100)).
+			Print(fmt.Sprintf("%s%f\n", string(out), tmpFloat))
+
+		time.Sleep(10 * time.Millisecond)
 	}
+}
+
+func calcAvrMax(inp []float32) (float32, float32) {
+	var sum float32 = 0
+	var max float32 = 0.01
+
+	for _, f := range inp {
+		sum += f
+
+		if f > max {
+			f = max
+		}
+	}
+
+	return sum / float32(len(inp)), max
+}
+
+func convToFloat(inp []byte) []float32 {
+	out := make([]float32, len(inp)/4)
+	tmp := make([]byte, 4)
+
+	var i = 0
+	for _, b := range inp {
+		if i > 3 {
+			i = 0
+
+			fBits := binary.LittleEndian.Uint32(tmp)
+			f := math.Float32frombits(fBits)
+			out = append(out, f)
+		}
+
+		tmp[i] = b
+		i++
+	}
+
+	return out
 }
