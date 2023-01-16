@@ -35,6 +35,8 @@ func main() {
 	}
 }
 
+const BUFSIZE = 2004
+
 func run(c *config.Config) error {
 	c.Init(os.Args)
 
@@ -43,11 +45,11 @@ func run(c *config.Config) error {
 
 	ss := pulse.SampleSpec{
 		Format:   pulse.SAMPLE_FLOAT32LE,
-		Rate:     48000,
+		Rate:     44100,
 		Channels: 1,
 	}
-	stream, err := pulse.Capture("led", "music", "", &ss)
 
+	stream, err := pulse.Capture("led", "music", "music", &ss)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,82 +57,57 @@ func run(c *config.Config) error {
 	defer stream.Free()
 	defer stream.Drain()
 
-	tmp := make([]byte, 4)
-	// pcmData := make([]byte, 1024)
-	// _, err = stream.Read(pcmData)
-	// if err != nil {
-	// 	log.Fatal("Error while reading: ", err)
-	// }
-
-	// pcm := convToFloat(pcmData)
-
 	fadeGrad := colorgrad.Rainbow()
-	outFile, err := os.Create("out.raw")
-	if err != nil {
-		panic(err)
-	}
 
 	for {
-		_, err = stream.Read(tmp)
+		buf := make([]byte, BUFSIZE)
+
+		_, err = stream.Read(buf)
 		if err != nil {
 			log.Fatal("Error while reading: ", err)
 		}
 
-		tmpBits := binary.LittleEndian.Uint32(tmp)
-		tmpFloat := math.Float32frombits(tmpBits)
+		pcm := convToFloat(buf)
 
-		outFile.Write(tmp)
+		for _, p := range pcm {
+			min := float32(-0.5)
+			max := float32(0.5)
 
-		// pcm := pcm[1:]
-		// pcm = append(pcm, tmpFloat)
+			if p < min || p > max {
+				fmt.Println(p)
+				continue
+			}
 
-		// _, max := calcAvrMax(pcm)
-		min := float32(-0.5)
-		// average := float32(0)
-		max := float32(0.5)
+			difference := p - min
+			value := difference
+			out := make([]byte, int(value*100))
 
-		if tmpFloat < min || tmpFloat > max {
-			continue
-		}
+			for i := range out {
+				out[i] = ' '
+			}
 
-		difference := tmpFloat - min
-		value := difference
-		out := make([]byte, int(value*100))
+			rgb := fadeGrad.At(float64(value))
 
-		for i := range out {
-			out[i] = ' '
-		}
+			// fmt.Println("\033[2J")
 
-		rgb := fadeGrad.At(float64(value))
+			latency, err := stream.Latency()
+			if err != nil {
+				return err
+			}
+			fmt.Print(latency)
 
-		// fmt.Print("\033[H\033[2J")
+			truecolor.
+				White().
+				Background(uint8(rgb.R*100), uint8(rgb.G*100), uint8(rgb.B*100)).
+				Print(fmt.Sprintf("%s%f\n", string(out), p))
 
-		truecolor.
-			White().
-			Background(uint8(rgb.R*100), uint8(rgb.G*100), uint8(rgb.B*100)).
-			Print(fmt.Sprintf("%s%f\n", string(out), tmpFloat))
-
-		time.Sleep(10 * time.Millisecond)
-	}
-}
-
-func calcAvrMax(inp []float32) (float32, float32) {
-	var sum float32 = 0
-	var max float32 = 0.01
-
-	for _, f := range inp {
-		sum += f
-
-		if f > max {
-			f = max
+			time.Sleep(time.Millisecond)
 		}
 	}
-
-	return sum / float32(len(inp)), max
 }
 
 func convToFloat(inp []byte) []float32 {
-	out := make([]float32, len(inp)/4)
+	out := make([]float32, 0)
 	tmp := make([]byte, 4)
 
 	var i = 0
